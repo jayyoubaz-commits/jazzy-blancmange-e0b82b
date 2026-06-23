@@ -1,0 +1,1113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PNOC037 Dosing Calculator</title>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #0a1628;
+    --navy-mid: #122040;
+    --navy-light: #1e3460;
+    --teal: #00b4c8;
+    --teal-dim: #007d8c;
+    --white: #f5f9ff;
+    --gray-100: #e8eef8;
+    --gray-200: #c8d4e8;
+    --gray-400: #8899bb;
+    --gray-600: #556080;
+    --red: #e85555;
+    --amber: #f0a020;
+    --green: #22c878;
+    --cycle1: #2563eb;
+    --cycle2: #7c3aed;
+    --cycle3: #0891b2;
+    --cycle4: #059669;
+    --cycle1-bg: #1e3a8a18;
+    --cycle2-bg: #4c1d9518;
+    --cycle3-bg: #0e749118;
+    --cycle4-bg: #05503618;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'IBM Plex Sans', sans-serif;
+    background: var(--navy);
+    color: var(--white);
+    min-height: 100vh;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .header {
+    background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 100%);
+    border-bottom: 2px solid var(--teal);
+    padding: 20px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .header-left { display: flex; align-items: center; gap: 16px; }
+  .trial-badge {
+    background: var(--teal);
+    color: var(--navy);
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 600;
+    font-size: 13px;
+    padding: 5px 12px;
+    border-radius: 4px;
+    letter-spacing: 0.05em;
+  }
+  .header h1 {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--white);
+    letter-spacing: -0.02em;
+  }
+  .header-sub {
+    font-size: 12px;
+    color: var(--gray-400);
+    font-weight: 300;
+  }
+  .main { max-width: 1400px; margin: 0 auto; padding: 28px 24px 60px; }
+  .input-section {
+    background: var(--navy-mid);
+    border: 1px solid var(--navy-light);
+    border-radius: 12px;
+    padding: 28px;
+    margin-bottom: 28px;
+  }
+  .input-section h2 {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--teal);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  .input-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 16px;
+    align-items: end;
+    flex-wrap: wrap;
+  }
+  @media (max-width: 600px) { .input-grid { grid-template-columns: 1fr; } }
+  .field label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--gray-400);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .field input {
+    width: 100%;
+    background: var(--navy);
+    border: 1.5px solid var(--navy-light);
+    border-radius: 8px;
+    color: var(--white);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 15px;
+    padding: 11px 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .field input:focus { border-color: var(--teal); }
+  .field input::placeholder { color: var(--gray-600); }
+  .btn-calc {
+    background: var(--teal);
+    color: var(--navy);
+    border: none;
+    border-radius: 8px;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    padding: 12px 28px;
+    cursor: pointer;
+    letter-spacing: 0.02em;
+    transition: background 0.15s, transform 0.1s;
+    white-space: nowrap;
+  }
+  .btn-calc:hover { background: #00cce0; }
+  .btn-calc:active { transform: scale(0.98); }
+  .btn-sec {
+    background: var(--navy-light);
+    color: var(--gray-200);
+    border: 1px solid var(--gray-600);
+    border-radius: 8px;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-weight: 500;
+    font-size: 13px;
+    padding: 10px 20px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .btn-sec:hover { background: var(--navy-mid); }
+  .results-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .patient-chip {
+    background: var(--navy-mid);
+    border: 1px solid var(--navy-light);
+    border-radius: 8px;
+    padding: 10px 18px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+  .chip-item { display: flex; flex-direction: column; gap: 2px; }
+  .chip-label { font-size: 10px; color: var(--gray-400); text-transform: uppercase; letter-spacing: 0.08em; }
+  .chip-value { font-family: 'IBM Plex Mono', monospace; font-size: 15px; font-weight: 600; color: var(--teal); }
+  .actions { display: flex; gap: 10px; flex-wrap: wrap; }
+  .drug-section { margin-bottom: 32px; }
+  .drug-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--navy-light);
+  }
+  .drug-name {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--white);
+  }
+  .drug-meta { font-size: 12px; color: var(--gray-400); font-family: 'IBM Plex Mono', monospace; }
+  .cycles-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+  }
+  @media (max-width: 900px) { .cycles-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 500px) { .cycles-grid { grid-template-columns: 1fr; } }
+  .cycle-card {
+    border-radius: 10px;
+    border: 1.5px solid;
+    overflow: hidden;
+  }
+  .cycle-card-1 { border-color: var(--cycle1); }
+  .cycle-card-2 { border-color: var(--cycle2); }
+  .cycle-card-3 { border-color: var(--cycle3); }
+  .cycle-card-4 { border-color: var(--cycle4); }
+  .cycle-header {
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .cycle-header-1 { background: linear-gradient(90deg, #1e3a8a40, #1e3a8a18); }
+  .cycle-header-2 { background: linear-gradient(90deg, #4c1d9540, #4c1d9518); }
+  .cycle-header-3 { background: linear-gradient(90deg, #0e749140, #0e749118); }
+  .cycle-header-4 { background: linear-gradient(90deg, #05503640, #05503618); }
+  .cycle-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  .cycle-label-1 { color: #93c5fd; }
+  .cycle-label-2 { color: #c4b5fd; }
+  .cycle-label-3 { color: #67e8f9; }
+  .cycle-label-4 { color: #6ee7b7; }
+  .pct-badge {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 4px;
+  }
+  .pct-badge-1 { background: #1e3a8a50; color: #93c5fd; }
+  .pct-badge-2 { background: #4c1d9550; color: #c4b5fd; }
+  .pct-badge-3 { background: #0e749150; color: #67e8f9; }
+  .pct-badge-4 { background: #05503650; color: #6ee7b7; }
+  .cycle-body { padding: 14px; background: var(--navy-mid); }
+  .dose-row {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--navy-light);
+  }
+  .dose-row:last-child { border-bottom: none; }
+  .dose-row-label {
+    font-size: 10px;
+    color: var(--gray-400);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .dose-row-value {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--white);
+    word-break: break-word;
+  }
+  .dose-row-value.warning { color: var(--amber); }
+  .dose-row-value.ok { color: var(--green); }
+  .flag-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: #f0a02018;
+    border: 1px solid var(--amber);
+    border-radius: 4px;
+    padding: 3px 8px;
+    font-size: 11px;
+    color: var(--amber);
+    font-weight: 600;
+    margin-top: 4px;
+  }
+  .formulation-tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .form-tab {
+    padding: 6px 14px;
+    border-radius: 6px;
+    border: 1.5px solid var(--navy-light);
+    background: var(--navy);
+    color: var(--gray-400);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  .form-tab.active { border-color: var(--teal); color: var(--teal); background: #00b4c812; }
+  .summary-section {
+    background: var(--navy-mid);
+    border: 1px solid var(--navy-light);
+    border-radius: 12px;
+    padding: 24px;
+    margin-top: 32px;
+  }
+  .summary-section h3 {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--teal);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-family: 'IBM Plex Mono', monospace;
+    margin-bottom: 16px;
+  }
+  .summary-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .summary-table th {
+    text-align: left;
+    padding: 8px 12px;
+    background: var(--navy);
+    color: var(--gray-400);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 600;
+  }
+  .summary-table td {
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--navy-light);
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--white);
+    vertical-align: top;
+  }
+  .summary-table tr:last-child td { border-bottom: none; }
+  .summary-table tr:hover td { background: #ffffff06; }
+  .td-cycle-1 { color: #93c5fd; font-weight: 700; }
+  .td-cycle-2 { color: #c4b5fd; font-weight: 700; }
+  .td-cycle-3 { color: #67e8f9; font-weight: 700; }
+  .td-cycle-4 { color: #6ee7b7; font-weight: 700; }
+  .disclaimer {
+    background: #f0a02010;
+    border: 1px solid #f0a02040;
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin-top: 24px;
+    font-size: 12px;
+    color: var(--amber);
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  .disclaimer-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+  .empty-state {
+    text-align: center;
+    padding: 80px 20px;
+    color: var(--gray-600);
+  }
+  .empty-icon { font-size: 48px; margin-bottom: 16px; opacity: 0.3; }
+  .empty-text { font-size: 16px; margin-bottom: 8px; color: var(--gray-400); }
+  .empty-sub { font-size: 13px; }
+  .info-note {
+    background: #00b4c810;
+    border: 1px solid #00b4c830;
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 11px;
+    color: var(--teal);
+    margin-bottom: 14px;
+  }
+  @media print {
+    body { background: white; color: black; }
+    .header { background: white; border-bottom: 2px solid #0a1628; }
+    .header h1, .trial-badge, .header-sub { color: black !important; }
+    .btn-calc, .btn-sec, .actions { display: none; }
+    .input-section { display: none; }
+    .cycle-card { border-color: #333 !important; }
+    .cycle-header { background: #f0f0f0 !important; }
+    .cycle-body { background: white; }
+    .cycle-label, .cycle-label-1, .cycle-label-2, .cycle-label-3, .cycle-label-4 { color: #333 !important; }
+    .pct-badge { background: #eee !important; color: #333 !important; }
+    .dose-row-label { color: #666; }
+    .dose-row-value { color: #000; }
+    .summary-section { background: white; border: 1px solid #ccc; }
+    .summary-table th { background: #f0f0f0; color: #333; }
+    .summary-table td { color: #000; }
+    .td-cycle-1, .td-cycle-2, .td-cycle-3, .td-cycle-4 { color: #333 !important; }
+    .drug-name { color: #000 !important; }
+    .patient-chip { background: #f0f0f0; border: 1px solid #ccc; }
+    .chip-label { color: #666; }
+    .chip-value { color: #003366; }
+    .flag-badge { background: #fff3cd; border-color: #f0a020; color: #856404; }
+    .disclaimer { background: #fff3cd; border-color: #f0a020; color: #856404; }
+    .main { padding: 16px; }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+
+// ---- DATA TABLES ----
+
+// Dabrafenib Dispersible Tablet data
+const dabrafenibLiquidData = [
+  // [weight, pct, doseMg, doseTabs, freq, volDiluted, volGiven, volWasted, pctDiff]
+  [8,100,20,2,'BID',5,5,0,100],[8,75,15.2,2,'BID',5,3.8,1.2,76],[8,50,10,1,'BID',5,5,0,50],[8,25,5,1,'BID',5,2.5,2.5,25],
+  [9,100,20,2,'BID',5,5,0,100],[9,75,15.2,2,'BID',5,3.8,1.2,76],[9,50,10,1,'BID',5,5,0,50],[9,25,5,1,'BID',5,2.5,2.5,25],
+  [9.1,100,20,2,'BID',5,5,0,100],[9.1,75,15.2,2,'BID',5,3.8,1.2,76],[9.1,50,10,1,'BID',5,5,0,50],[9.1,25,5,1,'BID',5,2.5,2.5,25],
+  [9.2,100,20,2,'BID',5,5,0,100],[9.2,75,15.2,2,'BID',5,3.8,1.2,76],[9.2,50,10,1,'BID',5,5,0,50],[9.2,25,5,1,'BID',5,2.5,2.5,25],
+  [9.3,100,20,2,'BID',5,5,0,100],[9.3,75,15.2,2,'BID',5,3.8,1.2,76],[9.3,50,10,1,'BID',5,5,0,50],[9.3,25,5,1,'BID',5,2.5,2.5,25],
+  [9.4,100,20,2,'BID',5,5,0,100],[9.4,75,15.2,2,'BID',5,3.8,1.2,76],[9.4,50,10,1,'BID',5,5,0,50],[9.4,25,5,1,'BID',5,2.5,2.5,25],
+  [9.5,100,20,2,'BID',5,5,0,100],[9.5,75,15.2,2,'BID',5,3.8,1.2,76],[9.5,50,10,1,'BID',5,5,0,50],[9.5,25,5,1,'BID',5,2.5,2.5,25],
+  [9.6,100,20,2,'BID',5,5,0,100],[9.6,75,15.2,2,'BID',5,3.8,1.2,76],[9.6,50,10,1,'BID',5,5,0,50],[9.6,25,5,1,'BID',5,2.5,2.5,25],
+  [9.7,100,20,2,'BID',5,5,0,100],[9.7,75,15.2,2,'BID',5,3.8,1.2,76],[9.7,50,10,1,'BID',5,5,0,50],[9.7,25,5,1,'BID',5,2.5,2.5,25],
+  [9.8,100,20,2,'BID',5,5,0,100],[9.8,75,15.2,2,'BID',5,3.8,1.2,76],[9.8,50,10,1,'BID',5,5,0,50],[9.8,25,5,1,'BID',5,2.5,2.5,25],
+  [9.9,100,20,2,'BID',5,5,0,100],[9.9,75,15.2,2,'BID',5,3.8,1.2,76],[9.9,50,10,1,'BID',5,5,0,50],[9.9,25,5,1,'BID',5,2.5,2.5,25],
+  [10,100,30,3,'BID',5,5,0,100],[10,75,22.8,3,'BID',5,3.8,1.2,76],[10,50,15.2,2,'BID',5,3.8,1.2,50.7],[10,25,7.6,1,'BID',5,3.8,1.2,25.3],
+  [11,100,30,3,'BID',5,5,0,100],[11,75,22.8,3,'BID',5,3.8,1.2,76],[11,50,15.2,2,'BID',5,3.8,1.2,50.7],[11,25,7.6,1,'BID',5,3.8,1.2,25.3],
+  [12,100,30,3,'BID',5,5,0,100],[12,75,22.8,3,'BID',5,3.8,1.2,76],[12,50,15.2,2,'BID',5,3.8,1.2,50.7],[12,25,7.6,1,'BID',5,3.8,1.2,25.3],
+  [13,100,30,3,'BID',5,5,0,100],[13,75,22.8,3,'BID',5,3.8,1.2,76],[13,50,15.2,2,'BID',5,3.8,1.2,50.7],[13,25,7.6,1,'BID',5,3.8,1.2,25.3],
+  [13.1,100,30,3,'BID',5,5,0,100],[13.1,75,22.8,3,'BID',5,3.8,1.2,76],[13.1,50,15.2,2,'BID',5,3.8,1.2,50.7],[13.1,25,7.6,1,'BID',5,3.8,1.2,25.3],
+  [13.2,100,30,3,'BID',5,5,0,100],[13.2,75,22.8,3,'BID',5,3.8,1.2,76],[13.2,50,15.2,2,'BID',5,3.8,1.2,50.7],[13.2,25,7.6,1,'BID',5,3.8,1.2,25.3],
+  [13.3,100,30,3,'BID',5,5,0,100],[13.3,75,22.8,3,'BID',5,3.8,1.2,76],[13.3,50,15.2,2,'BID',5,3.8,1.2,50.7],[13.3,25,7.6,1,'BID',5,3.8,1.2,25.3],
+  [13.4,100,30,3,'BID',5,5,0,100],[13.4,75,22.8,3,'BID',5,3.8,1.2,76],[13.4,50,15.2,2,'BID',5,3.8,1.2,50.7],[13.4,25,7.6,1,'BID',5,3.8,1.2,25.3],
+  [13.5,100,30,3,'BID',5,5,0,100],[13.5,75,22.8,3,'BID',5,3.8,1.2,76],[13.5,50,15.2,2,'BID',5,3.8,1.2,50.7],[13.5,25,7.6,1,'BID',5,3.8,1.2,25.3],
+  [13.6,100,30,3,'BID',5,5,0,100],[13.6,75,22.8,3,'BID',5,3.8,1.2,76],[13.6,50,15.2,2,'BID',5,3.8,1.2,50.7],[13.6,25,7.6,1,'BID',5,3.8,1.2,25.3],
+  [13.7,100,30,3,'BID',5,5,0,100],[13.7,75,22.8,3,'BID',5,3.8,1.2,76],[13.7,50,15.2,2,'BID',5,3.8,1.2,50.7],[13.7,25,7.6,1,'BID',5,3.8,1.2,25.3],
+  [13.8,100,30,3,'BID',5,5,0,100],[13.8,75,22.8,3,'BID',5,3.8,1.2,76],[13.8,50,15.2,2,'BID',5,3.8,1.2,50.7],[13.8,25,7.6,1,'BID',5,3.8,1.2,25.3],
+  [13.9,100,30,3,'BID',5,5,0,100],[13.9,75,22.8,3,'BID',5,3.8,1.2,76],[13.9,50,15.2,2,'BID',5,3.8,1.2,50.7],[13.9,25,7.6,1,'BID',5,3.8,1.2,25.3],
+  [14,100,40,4,'BID',5,5,0,100],[14,75,30,3,'BID',5,5,0,75],[14,50,20,2,'BID',5,5,0,50],[14,25,10,1,'BID',5,5,0,25],
+  [15,100,40,4,'BID',5,5,0,100],[15,75,30,3,'BID',5,5,0,75],[15,50,20,2,'BID',5,5,0,50],[15,25,10,1,'BID',5,5,0,25],
+  [16,100,40,4,'BID',5,5,0,100],[16,75,30,3,'BID',5,5,0,75],[16,50,20,2,'BID',5,5,0,50],[16,25,10,1,'BID',5,5,0,25],
+  [17,100,40,4,'BID',5,5,0,100],[17,75,30,3,'BID',5,5,0,75],[17,50,20,2,'BID',5,5,0,50],[17,25,10,1,'BID',5,5,0,25],
+  [17.1,100,40,4,'BID',5,5,0,100],[17.1,75,30,3,'BID',5,5,0,75],[17.1,50,20,2,'BID',5,5,0,50],[17.1,25,10,1,'BID',5,5,0,25],
+  [17.2,100,40,4,'BID',5,5,0,100],[17.2,75,30,3,'BID',5,5,0,75],[17.2,50,20,2,'BID',5,5,0,50],[17.2,25,10,1,'BID',5,5,0,25],
+  [17.3,100,40,4,'BID',5,5,0,100],[17.3,75,30,3,'BID',5,5,0,75],[17.3,50,20,2,'BID',5,5,0,50],[17.3,25,10,1,'BID',5,5,0,25],
+  [17.4,100,40,4,'BID',5,5,0,100],[17.4,75,30,3,'BID',5,5,0,75],[17.4,50,20,2,'BID',5,5,0,50],[17.4,25,10,1,'BID',5,5,0,25],
+  [17.5,100,40,4,'BID',5,5,0,100],[17.5,75,30,3,'BID',5,5,0,75],[17.5,50,20,2,'BID',5,5,0,50],[17.5,25,10,1,'BID',5,5,0,25],
+  [17.6,100,40,4,'BID',5,5,0,100],[17.6,75,30,3,'BID',5,5,0,75],[17.6,50,20,2,'BID',5,5,0,50],[17.6,25,10,1,'BID',5,5,0,25],
+  [17.7,100,40,4,'BID',5,5,0,100],[17.7,75,30,3,'BID',5,5,0,75],[17.7,50,20,2,'BID',5,5,0,50],[17.7,25,10,1,'BID',5,5,0,25],
+  [17.8,100,40,4,'BID',5,5,0,100],[17.8,75,30,3,'BID',5,5,0,75],[17.8,50,20,2,'BID',5,5,0,50],[17.8,25,10,1,'BID',5,5,0,25],
+  [17.9,100,40,4,'BID',5,5,0,100],[17.9,75,30,3,'BID',5,5,0,75],[17.9,50,20,2,'BID',5,5,0,50],[17.9,25,10,1,'BID',5,5,0,25],
+  [18,100,50,5,'BID',10,10,0,100],[18,75,36,4,'BID',5,4.5,0.5,72],[18,50,24,3,'BID',5,4,1,48],[18,25,12,2,'BID',5,3,2,24],
+  [19,100,50,5,'BID',10,10,0,100],[19,75,36,4,'BID',5,4.5,0.5,72],[19,50,24,3,'BID',5,4,1,48],[19,25,12,2,'BID',5,3,2,24],
+  [20,100,50,5,'BID',10,10,0,100],[20,75,36,4,'BID',5,4.5,0.5,72],[20,50,24,3,'BID',5,4,1,48],[20,25,12,2,'BID',5,3,2,24],
+  [21,100,50,5,'BID',10,10,0,100],[21,75,36,4,'BID',5,4.5,0.5,72],[21,50,24,3,'BID',5,4,1,48],[21,25,12,2,'BID',5,3,2,24],
+  [21.1,100,50,5,'BID',10,10,0,100],[21.1,75,36,4,'BID',5,4.5,0.5,72],[21.1,50,24,3,'BID',5,4,1,48],[21.1,25,12,2,'BID',5,3,2,24],
+  [21.2,100,50,5,'BID',10,10,0,100],[21.2,75,36,4,'BID',5,4.5,0.5,72],[21.2,50,24,3,'BID',5,4,1,48],[21.2,25,12,2,'BID',5,3,2,24],
+  [21.3,100,50,5,'BID',10,10,0,100],[21.3,75,36,4,'BID',5,4.5,0.5,72],[21.3,50,24,3,'BID',5,4,1,48],[21.3,25,12,2,'BID',5,3,2,24],
+  [21.4,100,50,5,'BID',10,10,0,100],[21.4,75,36,4,'BID',5,4.5,0.5,72],[21.4,50,24,3,'BID',5,4,1,48],[21.4,25,12,2,'BID',5,3,2,24],
+  [21.5,100,50,5,'BID',10,10,0,100],[21.5,75,36,4,'BID',5,4.5,0.5,72],[21.5,50,24,3,'BID',5,4,1,48],[21.5,25,12,2,'BID',5,3,2,24],
+  [21.6,100,50,5,'BID',10,10,0,100],[21.6,75,36,4,'BID',5,4.5,0.5,72],[21.6,50,24,3,'BID',5,4,1,48],[21.6,25,12,2,'BID',5,3,2,24],
+  [21.7,100,50,5,'BID',10,10,0,100],[21.7,75,36,4,'BID',5,4.5,0.5,72],[21.7,50,24,3,'BID',5,4,1,48],[21.7,25,12,2,'BID',5,3,2,24],
+  [21.8,100,50,5,'BID',10,10,0,100],[21.8,75,36,4,'BID',5,4.5,0.5,72],[21.8,50,24,3,'BID',5,4,1,48],[21.8,25,12,2,'BID',5,3,2,24],
+  [21.9,100,50,5,'BID',10,10,0,100],[21.9,75,36,4,'BID',5,4.5,0.5,72],[21.9,50,24,3,'BID',5,4,1,48],[21.9,25,12,2,'BID',5,3,2,24],
+  [22,100,60,6,'BID',10,10,0,100],[22,75,45,5,'BID',10,9,1,75],[22,50,30,3,'BID',5,5,0,50],[22,25,16,2,'BID',5,4,1,26.7],
+  [23,100,60,6,'BID',10,10,0,100],[23,75,45,5,'BID',10,9,1,75],[23,50,30,3,'BID',5,5,0,50],[23,25,16,2,'BID',5,4,1,26.7],
+  [24,100,60,6,'BID',10,10,0,100],[24,75,45,5,'BID',10,9,1,75],[24,50,30,3,'BID',5,5,0,50],[24,25,16,2,'BID',5,4,1,26.7],
+  [25,100,60,6,'BID',10,10,0,100],[25,75,45,5,'BID',10,9,1,75],[25,50,30,3,'BID',5,5,0,50],[25,25,16,2,'BID',5,4,1,26.7],
+  [25.1,100,60,6,'BID',10,10,0,100],[25.1,75,45,5,'BID',10,9,1,75],[25.1,50,30,3,'BID',5,5,0,50],[25.1,25,16,2,'BID',5,4,1,26.7],
+  [25.2,100,60,6,'BID',10,10,0,100],[25.2,75,45,5,'BID',10,9,1,75],[25.2,50,30,3,'BID',5,5,0,50],[25.2,25,16,2,'BID',5,4,1,26.7],
+  [25.3,100,60,6,'BID',10,10,0,100],[25.3,75,45,5,'BID',10,9,1,75],[25.3,50,30,3,'BID',5,5,0,50],[25.3,25,16,2,'BID',5,4,1,26.7],
+  [25.4,100,60,6,'BID',10,10,0,100],[25.4,75,45,5,'BID',10,9,1,75],[25.4,50,30,3,'BID',5,5,0,50],[25.4,25,16,2,'BID',5,4,1,26.7],
+  [25.5,100,60,6,'BID',10,10,0,100],[25.5,75,45,5,'BID',10,9,1,75],[25.5,50,30,3,'BID',5,5,0,50],[25.5,25,16,2,'BID',5,4,1,26.7],
+  [25.6,100,60,6,'BID',10,10,0,100],[25.6,75,45,5,'BID',10,9,1,75],[25.6,50,30,3,'BID',5,5,0,50],[25.6,25,16,2,'BID',5,4,1,26.7],
+  [25.7,100,60,6,'BID',10,10,0,100],[25.7,75,45,5,'BID',10,9,1,75],[25.7,50,30,3,'BID',5,5,0,50],[25.7,25,16,2,'BID',5,4,1,26.7],
+  [25.8,100,60,6,'BID',10,10,0,100],[25.8,75,45,5,'BID',10,9,1,75],[25.8,50,30,3,'BID',5,5,0,50],[25.8,25,16,2,'BID',5,4,1,26.7],
+  [25.9,100,60,6,'BID',10,10,0,100],[25.9,75,45,5,'BID',10,9,1,75],[25.9,50,30,3,'BID',5,5,0,50],[25.9,25,16,2,'BID',5,4,1,26.7],
+  [26,100,70,7,'BID',10,10,0,100],[26,75,54,6,'BID',10,9,1,77],[26,50,36,4,'BID',5,4.5,0.5,51.4],[26,25,18,2,'BID',5,4.5,0.5,25.7],
+  [27,100,70,7,'BID',10,10,0,100],[27,75,54,6,'BID',10,9,1,77],[27,50,36,4,'BID',5,4.5,0.5,51.4],[27,25,18,2,'BID',5,4.5,0.5,25.7],
+  [28,100,70,7,'BID',10,10,0,100],[28,75,54,6,'BID',10,9,1,77],[28,50,36,4,'BID',5,4.5,0.5,51.4],[28,25,18,2,'BID',5,4.5,0.5,25.7],
+  [29,100,70,7,'BID',10,10,0,100],[29,75,54,6,'BID',10,9,1,77],[29,50,36,4,'BID',5,4.5,0.5,51.4],[29,25,18,2,'BID',5,4.5,0.5,25.7],
+  [29.1,100,70,7,'BID',10,10,0,100],[29.1,75,54,6,'BID',10,9,1,77],[29.1,50,36,4,'BID',5,4.5,0.5,51.4],[29.1,25,18,2,'BID',5,4.5,0.5,25.7],
+  [29.2,100,70,7,'BID',10,10,0,100],[29.2,75,54,6,'BID',10,9,1,77],[29.2,50,36,4,'BID',5,4.5,0.5,51.4],[29.2,25,18,2,'BID',5,4.5,0.5,25.7],
+  [29.3,100,70,7,'BID',10,10,0,100],[29.3,75,54,6,'BID',10,9,1,77],[29.3,50,36,4,'BID',5,4.5,0.5,51.4],[29.3,25,18,2,'BID',5,4.5,0.5,25.7],
+  [29.4,100,70,7,'BID',10,10,0,100],[29.4,75,54,6,'BID',10,9,1,77],[29.4,50,36,4,'BID',5,4.5,0.5,51.4],[29.4,25,18,2,'BID',5,4.5,0.5,25.7],
+  [29.5,100,70,7,'BID',10,10,0,100],[29.5,75,54,6,'BID',10,9,1,77],[29.5,50,36,4,'BID',5,4.5,0.5,51.4],[29.5,25,18,2,'BID',5,4.5,0.5,25.7],
+  [29.6,100,70,7,'BID',10,10,0,100],[29.6,75,54,6,'BID',10,9,1,77],[29.6,50,36,4,'BID',5,4.5,0.5,51.4],[29.6,25,18,2,'BID',5,4.5,0.5,25.7],
+  [29.7,100,70,7,'BID',10,10,0,100],[29.7,75,54,6,'BID',10,9,1,77],[29.7,50,36,4,'BID',5,4.5,0.5,51.4],[29.7,25,18,2,'BID',5,4.5,0.5,25.7],
+  [29.8,100,70,7,'BID',10,10,0,100],[29.8,75,54,6,'BID',10,9,1,77],[29.8,50,36,4,'BID',5,4.5,0.5,51.4],[29.8,25,18,2,'BID',5,4.5,0.5,25.7],
+  [29.9,100,70,7,'BID',10,10,0,100],[29.9,75,54,6,'BID',10,9,1,77],[29.9,50,36,4,'BID',5,4.5,0.5,51.4],[29.9,25,18,2,'BID',5,4.5,0.5,25.7],
+  [30,100,80,8,'BID',10,10,0,100],[30,75,60,6,'BID',10,10,0,75],[30,50,40,4,'BID',5,5,0,50],[30,25,20,2,'BID',5,5,0,25],
+  [31,100,80,8,'BID',10,10,0,100],[31,75,60,6,'BID',10,10,0,75],[31,50,40,4,'BID',5,5,0,50],[31,25,20,2,'BID',5,5,0,25],
+  [32,100,80,8,'BID',10,10,0,100],[32,75,60,6,'BID',10,10,0,75],[32,50,40,4,'BID',5,5,0,50],[32,25,20,2,'BID',5,5,0,25],
+  [33,100,80,8,'BID',10,10,0,100],[33,75,60,6,'BID',10,10,0,75],[33,50,40,4,'BID',5,5,0,50],[33,25,20,2,'BID',5,5,0,25],
+  [33.1,100,80,8,'BID',10,10,0,100],[33.1,75,60,6,'BID',10,10,0,75],[33.1,50,40,4,'BID',5,5,0,50],[33.1,25,20,2,'BID',5,5,0,25],
+  [33.2,100,80,8,'BID',10,10,0,100],[33.2,75,60,6,'BID',10,10,0,75],[33.2,50,40,4,'BID',5,5,0,50],[33.2,25,20,2,'BID',5,5,0,25],
+  [33.3,100,80,8,'BID',10,10,0,100],[33.3,75,60,6,'BID',10,10,0,75],[33.3,50,40,4,'BID',5,5,0,50],[33.3,25,20,2,'BID',5,5,0,25],
+  [33.4,100,80,8,'BID',10,10,0,100],[33.4,75,60,6,'BID',10,10,0,75],[33.4,50,40,4,'BID',5,5,0,50],[33.4,25,20,2,'BID',5,5,0,25],
+  [33.5,100,80,8,'BID',10,10,0,100],[33.5,75,60,6,'BID',10,10,0,75],[33.5,50,40,4,'BID',5,5,0,50],[33.5,25,20,2,'BID',5,5,0,25],
+  [33.6,100,80,8,'BID',10,10,0,100],[33.6,75,60,6,'BID',10,10,0,75],[33.6,50,40,4,'BID',5,5,0,50],[33.6,25,20,2,'BID',5,5,0,25],
+  [33.7,100,80,8,'BID',10,10,0,100],[33.7,75,60,6,'BID',10,10,0,75],[33.7,50,40,4,'BID',5,5,0,50],[33.7,25,20,2,'BID',5,5,0,25],
+  [33.8,100,80,8,'BID',10,10,0,100],[33.8,75,60,6,'BID',10,10,0,75],[33.8,50,40,4,'BID',5,5,0,50],[33.8,25,20,2,'BID',5,5,0,25],
+  [33.9,100,80,8,'BID',10,10,0,100],[33.9,75,60,6,'BID',10,10,0,75],[33.9,50,40,4,'BID',5,5,0,50],[33.9,25,20,2,'BID',5,5,0,25],
+  [34,100,90,9,'BID',10,10,0,100],[34,75,66.5,7,'BID',10,9.5,0.5,73.9],[34,50,45,5,'BID',10,9,1,50],[34,25,22.8,3,'BID',5,3.8,1.2,25.3],
+  [35,100,90,9,'BID',10,10,0,100],[35,75,66.5,7,'BID',10,9.5,0.5,73.9],[35,50,45,5,'BID',10,9,1,50],[35,25,22.8,3,'BID',5,3.8,1.2,25.3],
+  [36,100,90,9,'BID',10,10,0,100],[36,75,66.5,7,'BID',10,9.5,0.5,73.9],[36,50,45,5,'BID',10,9,1,50],[36,25,22.8,3,'BID',5,3.8,1.2,25.3],
+  [37,100,90,9,'BID',10,10,0,100],[37,75,66.5,7,'BID',10,9.5,0.5,73.9],[37,50,45,5,'BID',10,9,1,50],[37,25,22.8,3,'BID',5,3.8,1.2,25.3],
+  [37.1,100,90,9,'BID',10,10,0,100],[37.1,75,66.5,7,'BID',10,9.5,0.5,73.9],[37.1,50,45,5,'BID',10,9,1,50],[37.1,25,22.8,3,'BID',5,3.8,1.2,25.3],
+  [37.2,100,90,9,'BID',10,10,0,100],[37.2,75,66.5,7,'BID',10,9.5,0.5,73.9],[37.2,50,45,5,'BID',10,9,1,50],[37.2,25,22.8,3,'BID',5,3.8,1.2,25.3],
+  [37.3,100,90,9,'BID',10,10,0,100],[37.3,75,66.5,7,'BID',10,9.5,0.5,73.9],[37.3,50,45,5,'BID',10,9,1,50],[37.3,25,22.8,3,'BID',5,3.8,1.2,25.3],
+  [37.4,100,90,9,'BID',10,10,0,100],[37.4,75,66.5,7,'BID',10,9.5,0.5,73.9],[37.4,50,45,5,'BID',10,9,1,50],[37.4,25,22.8,3,'BID',5,3.8,1.2,25.3],
+  [37.5,100,90,9,'BID',10,10,0,100],[37.5,75,66.5,7,'BID',10,9.5,0.5,73.9],[37.5,50,45,5,'BID',10,9,1,50],[37.5,25,22.8,3,'BID',5,3.8,1.2,25.3],
+  [37.6,100,90,9,'BID',10,10,0,100],[37.6,75,66.5,7,'BID',10,9.5,0.5,73.9],[37.6,50,45,5,'BID',10,9,1,50],[37.6,25,22.8,3,'BID',5,3.8,1.2,25.3],
+  [37.7,100,90,9,'BID',10,10,0,100],[37.7,75,66.5,7,'BID',10,9.5,0.5,73.9],[37.7,50,45,5,'BID',10,9,1,50],[37.7,25,22.8,3,'BID',5,3.8,1.2,25.3],
+  [37.8,100,90,9,'BID',10,10,0,100],[37.8,75,66.5,7,'BID',10,9.5,0.5,73.9],[37.8,50,45,5,'BID',10,9,1,50],[37.8,25,22.8,3,'BID',5,3.8,1.2,25.3],
+  [37.9,100,90,9,'BID',10,10,0,100],[37.9,75,66.5,7,'BID',10,9.5,0.5,73.9],[37.9,50,45,5,'BID',10,9,1,50],[37.9,25,22.8,3,'BID',5,3.8,1.2,25.3],
+  [38,100,100,10,'BID',10,10,0,100],[38,75,75.2,8,'BID',10,9.4,0.6,75.2],[38,50,50,5,'BID',10,10,0,50],[38,25,25.2,3,'BID',5,4.2,0.8,25.2],
+  [39,100,100,10,'BID',10,10,0,100],[39,75,75.2,8,'BID',10,9.4,0.6,75.2],[39,50,50,5,'BID',10,10,0,50],[39,25,25.2,3,'BID',5,4.2,0.8,25.2],
+  [40,100,100,10,'BID',10,10,0,100],[40,75,75.2,8,'BID',10,9.4,0.6,75.2],[40,50,50,5,'BID',10,10,0,50],[40,25,25.2,3,'BID',5,4.2,0.8,25.2],
+  [41,100,100,10,'BID',10,10,0,100],[41,75,75.2,8,'BID',10,9.4,0.6,75.2],[41,50,50,5,'BID',10,10,0,50],[41,25,25.2,3,'BID',5,4.2,0.8,25.2],
+  [41.1,100,100,10,'BID',10,10,0,100],[41.1,75,75.2,8,'BID',10,9.4,0.6,75.2],[41.1,50,50,5,'BID',10,10,0,50],[41.1,25,25.2,3,'BID',5,4.2,0.8,25.2],
+  [41.2,100,100,10,'BID',10,10,0,100],[41.2,75,75.2,8,'BID',10,9.4,0.6,75.2],[41.2,50,50,5,'BID',10,10,0,50],[41.2,25,25.2,3,'BID',5,4.2,0.8,25.2],
+  [41.3,100,100,10,'BID',10,10,0,100],[41.3,75,75.2,8,'BID',10,9.4,0.6,75.2],[41.3,50,50,5,'BID',10,10,0,50],[41.3,25,25.2,3,'BID',5,4.2,0.8,25.2],
+  [41.4,100,100,10,'BID',10,10,0,100],[41.4,75,75.2,8,'BID',10,9.4,0.6,75.2],[41.4,50,50,5,'BID',10,10,0,50],[41.4,25,25.2,3,'BID',5,4.2,0.8,25.2],
+  [41.5,100,100,10,'BID',10,10,0,100],[41.5,75,75.2,8,'BID',10,9.4,0.6,75.2],[41.5,50,50,5,'BID',10,10,0,50],[41.5,25,25.2,3,'BID',5,4.2,0.8,25.2],
+  [41.6,100,100,10,'BID',10,10,0,100],[41.6,75,75.2,8,'BID',10,9.4,0.6,75.2],[41.6,50,50,5,'BID',10,10,0,50],[41.6,25,25.2,3,'BID',5,4.2,0.8,25.2],
+  [41.7,100,100,10,'BID',10,10,0,100],[41.7,75,75.2,8,'BID',10,9.4,0.6,75.2],[41.7,50,50,5,'BID',10,10,0,50],[41.7,25,25.2,3,'BID',5,4.2,0.8,25.2],
+  [41.8,100,100,10,'BID',10,10,0,100],[41.8,75,75.2,8,'BID',10,9.4,0.6,75.2],[41.8,50,50,5,'BID',10,10,0,50],[41.8,25,25.2,3,'BID',5,4.2,0.8,25.2],
+  [41.9,100,100,10,'BID',10,10,0,100],[41.9,75,75.2,8,'BID',10,9.4,0.6,75.2],[41.9,50,50,5,'BID',10,10,0,50],[41.9,25,25.2,3,'BID',5,4.2,0.8,25.2],
+  [42,100,110,11,'BID',10,10,0,100],[42,75,82.8,9,'BID',10,9.2,0.8,75.3],[42,50,55.2,6,'BID',10,9.2,0.8,50.2],[42,25,27.6,3,'BID',5,4.6,0.4,25.1],
+  [43,100,110,11,'BID',10,10,0,100],[43,75,82.8,9,'BID',10,9.2,0.8,75.3],[43,50,55.2,6,'BID',10,9.2,0.8,50.2],[43,25,27.6,3,'BID',5,4.6,0.4,25.1],
+  [44,100,110,11,'BID',10,10,0,100],[44,75,82.8,9,'BID',10,9.2,0.8,75.3],[44,50,55.2,6,'BID',10,9.2,0.8,50.2],[44,25,27.6,3,'BID',5,4.6,0.4,25.1],
+  [45,100,110,11,'BID',10,10,0,100],[45,75,82.8,9,'BID',10,9.2,0.8,75.3],[45,50,55.2,6,'BID',10,9.2,0.8,50.2],[45,25,27.6,3,'BID',5,4.6,0.4,25.1],
+  [45.1,100,110,11,'BID',10,10,0,100],[45.1,75,82.8,9,'BID',10,9.2,0.8,75.3],[45.1,50,55.2,6,'BID',10,9.2,0.8,50.2],[45.1,25,27.6,3,'BID',5,4.6,0.4,25.1],
+  [45.2,100,110,11,'BID',10,10,0,100],[45.2,75,82.8,9,'BID',10,9.2,0.8,75.3],[45.2,50,55.2,6,'BID',10,9.2,0.8,50.2],[45.2,25,27.6,3,'BID',5,4.6,0.4,25.1],
+  [45.3,100,110,11,'BID',10,10,0,100],[45.3,75,82.8,9,'BID',10,9.2,0.8,75.3],[45.3,50,55.2,6,'BID',10,9.2,0.8,50.2],[45.3,25,27.6,3,'BID',5,4.6,0.4,25.1],
+  [45.4,100,110,11,'BID',10,10,0,100],[45.4,75,82.8,9,'BID',10,9.2,0.8,75.3],[45.4,50,55.2,6,'BID',10,9.2,0.8,50.2],[45.4,25,27.6,3,'BID',5,4.6,0.4,25.1],
+  [45.5,100,110,11,'BID',10,10,0,100],[45.5,75,82.8,9,'BID',10,9.2,0.8,75.3],[45.5,50,55.2,6,'BID',10,9.2,0.8,50.2],[45.5,25,27.6,3,'BID',5,4.6,0.4,25.1],
+  [45.6,100,110,11,'BID',10,10,0,100],[45.6,75,82.8,9,'BID',10,9.2,0.8,75.3],[45.6,50,55.2,6,'BID',10,9.2,0.8,50.2],[45.6,25,27.6,3,'BID',5,4.6,0.4,25.1],
+  [45.7,100,110,11,'BID',10,10,0,100],[45.7,75,82.8,9,'BID',10,9.2,0.8,75.3],[45.7,50,55.2,6,'BID',10,9.2,0.8,50.2],[45.7,25,27.6,3,'BID',5,4.6,0.4,25.1],
+  [45.8,100,110,11,'BID',10,10,0,100],[45.8,75,82.8,9,'BID',10,9.2,0.8,75.3],[45.8,50,55.2,6,'BID',10,9.2,0.8,50.2],[45.8,25,27.6,3,'BID',5,4.6,0.4,25.1],
+  [45.9,100,110,11,'BID',10,10,0,100],[45.9,75,82.8,9,'BID',10,9.2,0.8,75.3],[45.9,50,55.2,6,'BID',10,9.2,0.8,50.2],[45.9,25,27.6,3,'BID',5,4.6,0.4,25.1],
+  [46,100,130,13,'BID',10,10,0,100],[46,75,98,10,'BID',10,9.8,0.2,75.4],[46,50,65.8,7,'BID',10,9.4,0.6,50.6],[46,25,32,4,'BID',5,4,1,24.6],
+  [47,100,130,13,'BID',10,10,0,100],[47,75,98,10,'BID',10,9.8,0.2,75.4],[47,50,65.8,7,'BID',10,9.4,0.6,50.6],[47,25,32,4,'BID',5,4,1,24.6],
+  [48,100,130,13,'BID',10,10,0,100],[48,75,98,10,'BID',10,9.8,0.2,75.4],[48,50,65.8,7,'BID',10,9.4,0.6,50.6],[48,25,32,4,'BID',5,4,1,24.6],
+  [49,100,130,13,'BID',10,10,0,100],[49,75,98,10,'BID',10,9.8,0.2,75.4],[49,50,65.8,7,'BID',10,9.4,0.6,50.6],[49,25,32,4,'BID',5,4,1,24.6],
+  [50,100,130,13,'BID',10,10,0,100],[50,75,98,10,'BID',10,9.8,0.2,75.4],[50,50,65.8,7,'BID',10,9.4,0.6,50.6],[50,25,32,4,'BID',5,4,1,24.6],
+  [50.1,100,130,13,'BID',10,10,0,100],[50.1,75,98,10,'BID',10,9.8,0.2,75.4],[50.1,50,65.8,7,'BID',10,9.4,0.6,50.6],[50.1,25,32,4,'BID',5,4,1,24.6],
+  [50.2,100,130,13,'BID',10,10,0,100],[50.2,75,98,10,'BID',10,9.8,0.2,75.4],[50.2,50,65.8,7,'BID',10,9.4,0.6,50.6],[50.2,25,32,4,'BID',5,4,1,24.6],
+  [50.3,100,130,13,'BID',10,10,0,100],[50.3,75,98,10,'BID',10,9.8,0.2,75.4],[50.3,50,65.8,7,'BID',10,9.4,0.6,50.6],[50.3,25,32,4,'BID',5,4,1,24.6],
+  [50.4,100,130,13,'BID',10,10,0,100],[50.4,75,98,10,'BID',10,9.8,0.2,75.4],[50.4,50,65.8,7,'BID',10,9.4,0.6,50.6],[50.4,25,32,4,'BID',5,4,1,24.6],
+  [50.5,100,130,13,'BID',10,10,0,100],[50.5,75,98,10,'BID',10,9.8,0.2,75.4],[50.5,50,65.8,7,'BID',10,9.4,0.6,50.6],[50.5,25,32,4,'BID',5,4,1,24.6],
+  [50.6,100,130,13,'BID',10,10,0,100],[50.6,75,98,10,'BID',10,9.8,0.2,75.4],[50.6,50,65.8,7,'BID',10,9.4,0.6,50.6],[50.6,25,32,4,'BID',5,4,1,24.6],
+  [50.7,100,130,13,'BID',10,10,0,100],[50.7,75,98,10,'BID',10,9.8,0.2,75.4],[50.7,50,65.8,7,'BID',10,9.4,0.6,50.6],[50.7,25,32,4,'BID',5,4,1,24.6],
+  [50.8,100,130,13,'BID',10,10,0,100],[50.8,75,98,10,'BID',10,9.8,0.2,75.4],[50.8,50,65.8,7,'BID',10,9.4,0.6,50.6],[50.8,25,32,4,'BID',5,4,1,24.6],
+  [50.9,100,130,13,'BID',10,10,0,100],[50.9,75,98,10,'BID',10,9.8,0.2,75.4],[50.9,50,65.8,7,'BID',10,9.4,0.6,50.6],[50.9,25,32,4,'BID',5,4,1,24.6],
+  // >=51
+  [51,100,150,15,'BID',10,10,0,100],[51,75,112.8,12,'BID',10,9.4,0.6,75.2],[51,50,75.2,8,'BID',10,9.4,0.6,50.1],[51,25,38.4,4,'BID',5,4.8,0.2,25.6],
+];
+
+// Dabrafenib Capsule data
+// [weight, pct, startingDoseMg, doseDesc, freq, weeklyDoseMg, pctDiff]
+const dabrafenibCapsuleData = [
+  [26,100,75,'75 mg capsule BID','BID',1050,100],[26,75,null,'75 mg capsule AM, 50 mg capsule PM','BID',875,83.3],[26,50,null,'50 mg capsule BID','BID',700,66.67],[26,25,null,'50 mg capsule BID on M/W/F','BID',300,28.57],
+  [27,100,75,'75 mg capsule BID','BID',1050,100],[27,75,null,'75 mg capsule AM, 50 mg capsule PM','BID',875,83.3],[27,50,null,'50 mg capsule BID','BID',700,66.67],[27,25,null,'50 mg capsule BID on M/W/F','BID',300,28.57],
+  [28,100,75,'75 mg capsule BID','BID',1050,100],[28,75,null,'75 mg capsule AM, 50 mg capsule PM','BID',875,83.3],[28,50,null,'50 mg capsule BID','BID',700,66.67],[28,25,null,'50 mg capsule BID on M/W/F','BID',300,28.57],
+  [29,100,75,'75 mg capsule BID','BID',1050,100],[29,75,null,'75 mg capsule AM, 50 mg capsule PM','BID',875,83.3],[29,50,null,'50 mg capsule BID','BID',700,66.67],[29,25,null,'50 mg capsule BID on M/W/F','BID',300,28.57],
+  [30,100,75,'75 mg capsule BID','BID',1050,100],[30,75,null,'75 mg capsule AM, 50 mg capsule PM','BID',875,83.3],[30,50,null,'50 mg capsule BID','BID',700,66.67],[30,25,null,'50 mg capsule BID on M/W/F','BID',300,28.57],
+  [31,100,75,'75 mg capsule BID','BID',1050,100],[31,75,null,'75 mg capsule AM, 50 mg capsule PM','BID',875,83.3],[31,50,null,'50 mg capsule BID','BID',700,66.67],[31,25,null,'50 mg capsule BID on M/W/F','BID',300,28.57],
+  [32,100,75,'75 mg capsule BID','BID',1050,100],[32,75,null,'75 mg capsule AM, 50 mg capsule PM','BID',875,83.3],[32,50,null,'50 mg capsule BID','BID',700,66.67],[32,25,null,'50 mg capsule BID on M/W/F','BID',300,28.57],
+  [33,100,75,'75 mg capsule BID','BID',1050,100],[33,75,null,'75 mg capsule AM, 50 mg capsule PM','BID',875,83.3],[33,50,null,'50 mg capsule BID','BID',700,66.67],[33,25,null,'50 mg capsule BID on M/W/F','BID',300,28.57],
+  [34,100,75,'75 mg capsule BID','BID',1050,100],[34,75,null,'75 mg capsule AM, 50 mg capsule PM','BID',875,83.3],[34,50,null,'50 mg capsule BID','BID',700,66.67],[34,25,null,'50 mg capsule BID on M/W/F','BID',300,28.57],
+  [35,100,75,'75 mg capsule BID','BID',1050,100],[35,75,null,'75 mg capsule AM, 50 mg capsule PM','BID',875,83.3],[35,50,null,'50 mg capsule BID','BID',700,66.67],[35,25,null,'50 mg capsule BID on M/W/F','BID',300,28.57],
+  [36,100,75,'75 mg capsule BID','BID',1050,100],[36,75,null,'75 mg capsule AM, 50 mg capsule PM','BID',875,83.3],[36,50,null,'50 mg capsule BID','BID',700,66.67],[36,25,null,'50 mg capsule BID on M/W/F','BID',300,28.57],
+  [37,100,75,'75 mg capsule BID','BID',1050,100],[37,75,null,'75 mg capsule AM, 50 mg capsule PM','BID',875,83.3],[37,50,null,'50 mg capsule BID','BID',700,66.67],[37,25,null,'50 mg capsule BID on M/W/F','BID',300,28.57],
+];
+// 37.1-37.9
+for(let w=371;w<=379;w++){
+  const wf=w/10;
+  dabrafenibCapsuleData.push([wf,100,75,'75 mg capsule BID','BID',1050,100],[wf,75,null,'75 mg capsule AM, 50 mg capsule PM','BID',875,83.3],[wf,50,null,'50 mg capsule BID','BID',700,66.67],[wf,25,null,'50 mg capsule BID on M/W/F','BID',300,28.57]);
+}
+// 38-50.9: two 50mg capsules BID at 100%
+const cap38to50rows = [38,39,40,41,42,43,44,45,46,47,48,49,50];
+for(const w of cap38to50rows){
+  dabrafenibCapsuleData.push([w,100,100,'Two 50 mg capsules BID','BID',1400,100],[w,75,null,'75 mg capsule BID','BID',1050,75],[w,50,null,'One 50 mg capsule BID','BID',700,50],[w,25,null,'50 mg capsule BID Tue/Thu/Sat/Sun','BID',400,28.57]);
+}
+for(let d=1;d<=9;d++){
+  const wf=parseFloat((50+d/10).toFixed(1));
+  dabrafenibCapsuleData.push([wf,100,100,'Two 50 mg capsules BID','BID',1400,100],[wf,75,null,'75 mg capsule BID','BID',1050,75],[wf,50,null,'One 50 mg capsule BID','BID',700,50],[wf,25,null,'50 mg capsule BID Tue/Thu/Sat/Sun','BID',400,28.57]);
+}
+// >=51
+dabrafenibCapsuleData.push([51,100,150,'Two 75 mg capsules BID','BID',2100,100],[51,75,null,'Two 75 mg capsules AM, one 75 mg capsule PM','BID',1575,75],[51,50,null,'One 75 mg capsule BID','BID',1050,50],[51,25,null,'One 50 mg capsule BID','BID',700,33.3]);
+
+// Trametinib Liquid data
+// [weight, pct, doseMg, doseMl, freq]
+const trametinibLiquidRaw = [
+  [8,100,0.3,6],[8,75,0.225,4.5],[8,50,0.15,3],[8,25,0.075,1.5],
+];
+// 8.1-8.9 same as 8
+for(let d=1;d<=9;d++){const wf=parseFloat((8+d/10).toFixed(1));trametinibLiquidRaw.push([wf,100,0.3,6],[wf,75,0.225,4.5],[wf,50,0.15,3],[wf,25,0.075,1.5]);}
+trametinibLiquidRaw.push([9,100,0.35,7],[9,75,0.25,5],[9,50,0.175,3.5],[9,25,0.1,2]);
+for(let d=0;d<=9;d++){const wf=parseFloat((10+d/10).toFixed(1));trametinibLiquidRaw.push([wf,100,0.35,7],[wf,75,0.25,5],[wf,50,0.175,3.5],[wf,25,0.1,2]);}
+for(let d=0;d<=9;d++){const wf=parseFloat((11+d/10).toFixed(1));trametinibLiquidRaw.push([wf,100,0.4,8],[wf,75,0.3,6],[wf,50,0.2,4],[wf,25,0.1,2]);}
+// 12-13.9
+for(let w=12;w<=13;w++){trametinibLiquidRaw.push([w,100,0.45,9],[w,75,0.35,7],[w,50,0.225,4.5],[w,25,0.125,2.5]);}
+for(let d=1;d<=9;d++){const wf=parseFloat((13+d/10).toFixed(1));trametinibLiquidRaw.push([wf,100,0.45,9],[wf,75,0.35,7],[wf,50,0.225,4.5],[wf,25,0.125,2.5]);}
+// 14-17.9
+for(let w=14;w<=17;w++){trametinibLiquidRaw.push([w,100,0.55,11],[w,75,0.425,8.5],[w,50,0.275,5.5],[w,25,0.15,3]);}
+for(let d=1;d<=9;d++){const wf=parseFloat((17+d/10).toFixed(1));trametinibLiquidRaw.push([wf,100,0.55,11],[wf,75,0.425,8.5],[wf,50,0.275,5.5],[wf,25,0.15,3]);}
+// 18-21.9
+for(let w=18;w<=21;w++){trametinibLiquidRaw.push([w,100,0.7,14],[w,75,0.525,10.5],[w,50,0.35,7],[w,25,0.175,3.5]);}
+for(let d=1;d<=9;d++){const wf=parseFloat((21+d/10).toFixed(1));trametinibLiquidRaw.push([wf,100,0.7,14],[wf,75,0.525,10.5],[wf,50,0.35,7],[wf,25,0.175,3.5]);}
+// 22-25.9
+for(let w=22;w<=25;w++){trametinibLiquidRaw.push([w,100,0.85,17],[w,75,0.65,13],[w,50,0.425,8.5],[w,25,0.225,4.5]);}
+for(let d=1;d<=9;d++){const wf=parseFloat((25+d/10).toFixed(1));trametinibLiquidRaw.push([wf,100,0.85,17],[wf,75,0.65,13],[wf,50,0.425,8.5],[wf,25,0.225,4.5]);}
+// 26-29.9
+for(let w=26;w<=29;w++){trametinibLiquidRaw.push([w,100,0.9,18],[w,75,0.675,13.5],[w,50,0.45,9],[w,25,0.225,4.5]);}
+for(let d=1;d<=9;d++){const wf=parseFloat((29+d/10).toFixed(1));trametinibLiquidRaw.push([wf,100,0.9,18],[wf,75,0.675,13.5],[wf,50,0.45,9],[wf,25,0.225,4.5]);}
+// 30-33.9
+for(let w=30;w<=33;w++){trametinibLiquidRaw.push([w,100,1,20],[w,75,0.75,15],[w,50,0.5,10],[w,25,0.25,5]);}
+for(let d=1;d<=9;d++){const wf=parseFloat((33+d/10).toFixed(1));trametinibLiquidRaw.push([wf,100,1,20],[wf,75,0.75,15],[wf,50,0.5,10],[wf,25,0.25,5]);}
+// 34-37.9
+for(let w=34;w<=37;w++){trametinibLiquidRaw.push([w,100,1.15,23],[w,75,0.875,17.5],[w,50,0.575,11.5],[w,25,0.3,6]);}
+for(let d=1;d<=9;d++){const wf=parseFloat((37+d/10).toFixed(1));trametinibLiquidRaw.push([wf,100,1.15,23],[wf,75,0.875,17.5],[wf,50,0.575,11.5],[wf,25,0.3,6]);}
+// 38-41.9
+for(let w=38;w<=41;w++){trametinibLiquidRaw.push([w,100,1.25,25],[w,75,0.95,19],[w,50,0.625,12.5],[w,25,0.3,6]);}
+for(let d=1;d<=9;d++){const wf=parseFloat((41+d/10).toFixed(1));trametinibLiquidRaw.push([wf,100,1.25,25],[wf,75,0.95,19],[wf,50,0.625,12.5],[wf,25,0.3,6]);}
+// 42-45.9
+for(let w=42;w<=45;w++){trametinibLiquidRaw.push([w,100,1.4,28],[w,75,1.05,21],[w,50,0.7,14],[w,25,0.35,7]);}
+for(let d=1;d<=9;d++){const wf=parseFloat((45+d/10).toFixed(1));trametinibLiquidRaw.push([wf,100,1.4,28],[wf,75,1.05,21],[wf,50,0.7,14],[wf,25,0.35,7]);}
+// 46-50.9
+for(let w=46;w<=50;w++){trametinibLiquidRaw.push([w,100,1.6,32],[w,75,1.2,24],[w,50,0.8,16],[w,25,0.4,8]);}
+for(let d=1;d<=9;d++){const wf=parseFloat((50+d/10).toFixed(1));trametinibLiquidRaw.push([wf,100,1.6,32],[wf,75,1.2,24],[wf,50,0.8,16],[wf,25,0.4,8]);}
+// >=51
+trametinibLiquidRaw.push([51,100,2,40],[51,75,1.5,30],[51,50,1,20],[51,25,0.5,10]);
+const trametinibLiquidData = trametinibLiquidRaw.map(r=>({weight:r[0],pct:r[1],doseMg:r[2],doseMl:r[3],freq:'Daily'}));
+
+// Trametinib Capsule data
+// [weight, pct, doseDesc, weeklyDoseMg, pctDiff]
+// 26-37.9: 1mg per day base, 0.5mg/0.5mg available
+const tramCapBase26 = [
+  [100,'1 mg capsule Daily',7,100],
+  [75,'M/W/F: 1 mg; Tue/Thu/Sat/Sun: 0.5 mg',5,71.4],
+  [50,'0.5 mg capsule Daily',3.5,50],
+  [25,'0.5 mg capsule on M/W/F',1.5,21.4],
+];
+const tramCapBase38 = [
+  [100,'1.5 mg capsule Daily',10.5,100],
+  [75,'Mon/Thu: 1.5 mg; Tue/Wed/Fri/Sat/Sun: 1 mg',8,76.2],
+  [50,'M/W/F: 1 mg; Tue/Thu/Sat/Sun: 0.5 mg',5,47.6],
+  [25,'Mon/Tue/Thu/Fri/Sun: 0.5 mg',2.5,23.8],
+];
+const tramCapBase51 = [
+  [100,'2 mg capsule Daily',14,100],
+  [75,'1.5 mg capsule Daily',10.5,75],
+  [50,'1 mg capsule Daily',7,50],
+  [25,'0.5 mg capsule Daily',3.5,25],
+];
+const trametinibCapsuleData = [];
+const addTramCap = (w, base) => {
+  base.forEach(r => trametinibCapsuleData.push({weight:w, pct:r[0], doseDesc:r[1], weeklyDoseMg:r[2], pctDiff:r[3]}));
+};
+for(let w=26;w<=37;w++) addTramCap(w, tramCapBase26);
+for(let d=1;d<=9;d++) addTramCap(parseFloat((37+d/10).toFixed(1)), tramCapBase26);
+for(let w=38;w<=50;w++) addTramCap(w, tramCapBase38);
+for(let d=1;d<=9;d++) addTramCap(parseFloat((50+d/10).toFixed(1)), tramCapBase38);
+addTramCap(51, tramCapBase51);
+
+// Trametinib Capsule-to-Liquid (mixed) data
+// [weight, pct, doseMg, formulation, volMl]
+const tramCapLiqData = [];
+const addTCL = (w, rows) => rows.forEach(r => tramCapLiqData.push({weight:w, pct:r[0], doseMg:r[1], formulation:r[2], volMl:r[3]}));
+const tcl26base = [[100,1,'Capsule','N/A'],[75,0.75,'Liquid',15],[50,0.5,'Capsule','N/A'],[25,0.25,'Liquid',5]];
+const tcl38base = [[100,1.5,'Capsule','N/A'],[75,1.125,'Liquid',22.5],[50,0.75,'Liquid',15],[25,0.375,'Liquid',7.5]];
+const tcl51base = [[100,2,'Capsule','N/A'],[75,1.5,'Capsule','N/A'],[50,1,'Capsule','N/A'],[25,0.5,'Capsule','N/A']];
+for(let w=26;w<=37;w++) addTCL(w,tcl26base);
+for(let d=1;d<=9;d++) addTCL(parseFloat((37+d/10).toFixed(1)),tcl26base);
+for(let w=38;w<=50;w++) addTCL(w,tcl38base);
+for(let d=1;d<=9;d++) addTCL(parseFloat((50+d/10).toFixed(1)),tcl38base);
+addTCL(51,tcl51base);
+
+// ---- LOOKUP FUNCTIONS ----
+function roundWeight(w) { return Math.round(w * 10) / 10; }
+
+function lookupWeight(w, data, weightKey='weight') {
+  const rw = roundWeight(w);
+  // Find exact match or cap at >=51
+  let row = data.find(r => r[weightKey]===rw || (rw>=51 && r[weightKey]===51));
+  if (!row && rw > 50.9) row = data.find(r => r[weightKey]===51);
+  return row;
+}
+
+function getDabLiquid(weight, pct) {
+  const rw = roundWeight(weight);
+  let row;
+  if(rw >= 51) row = dabrafenibLiquidData.find(r=>r[0]===51 && r[1]===pct);
+  else row = dabrafenibLiquidData.find(r=>r[0]===rw && r[1]===pct);
+  return row || null;
+}
+
+function getDabCapsule(weight, pct) {
+  const rw = roundWeight(weight);
+  let row;
+  if(rw >= 51) row = dabrafenibCapsuleData.find(r=>r[0]===51 && r[1]===pct);
+  else row = dabrafenibCapsuleData.find(r=>r[0]===rw && r[1]===pct);
+  return row || null;
+}
+
+function getTramLiquid(weight, pct) {
+  const rw = roundWeight(weight);
+  let row;
+  if(rw >= 51) row = trametinibLiquidData.find(r=>r.weight===51 && r.pct===pct);
+  else row = trametinibLiquidData.find(r=>r.weight===rw && r.pct===pct);
+  return row || null;
+}
+
+function getTramCapsule(weight, pct) {
+  const rw = roundWeight(weight);
+  let row;
+  if(rw >= 51) row = trametinibCapsuleData.find(r=>r.weight===51 && r.pct===pct);
+  else row = trametinibCapsuleData.find(r=>r.weight===rw && r.pct===pct);
+  return row || null;
+}
+
+function getTramCapLiq(weight, pct) {
+  const rw = roundWeight(weight);
+  let row;
+  if(rw >= 51) row = tramCapLiqData.find(r=>r.weight===51 && r.pct===pct);
+  else row = tramCapLiqData.find(r=>r.weight===rw && r.pct===pct);
+  return row || null;
+}
+
+const CYCLES = [
+  { label: 'Cycle 1', pct: 100, idx: 1 },
+  { label: 'Cycle 2', pct: 75,  idx: 2 },
+  { label: 'Cycle 3', pct: 50,  idx: 3 },
+  { label: 'Cycle 4', pct: 25,  idx: 4 },
+];
+
+function flagDeviation(actual, target) {
+  if (!actual || !target) return false;
+  const diff = Math.abs(actual - target) / target * 100;
+  return diff > 15;
+}
+
+// ---- REACT APP ----
+const { useState, useCallback } = React;
+
+function App() {
+  const [patientId, setPatientId] = useState('');
+  const [weight, setWeight] = useState('');
+  const [results, setResults] = useState(null);
+  const [dabFormTab, setDabFormTab] = useState('liquid');
+  const [tramFormTab, setTramFormTab] = useState('liquid');
+  const [error, setError] = useState('');
+
+  const calculate = useCallback(() => {
+    setError('');
+    const w = parseFloat(weight);
+    if (!patientId.trim()) { setError('Please enter a Patient ID.'); return; }
+    if (isNaN(w) || w < 8 || w > 200) { setError('Please enter a valid weight (8–200 kg).'); return; }
+    setResults({ patientId: patientId.trim(), weight: w });
+  }, [patientId, weight]);
+
+  const handleKeyDown = (e) => { if(e.key==='Enter') calculate(); };
+
+  const downloadCSV = () => {
+    if(!results) return;
+    const { weight: w } = results;
+    const lines = [`PNOC037 Dosing Calculator - Patient: ${results.patientId} - Weight: ${w} kg`,''];
+    lines.push('--- DABRAFENIB (Dispersible Tablet) ---');
+    lines.push('Cycle,Reduction,Dose (mg),# Tabs,Freq,Vol Diluted (mL),Vol Given (mL),Vol Wasted (mL),% Diff from Initial');
+    CYCLES.forEach(c=>{
+      const d=getDabLiquid(w,c.pct);
+      if(d) lines.push(`${c.label},${c.pct}%,${d[2]},${d[3]},${d[4]},${d[5]},${d[6]},${d[7]},${d[8]}%`);
+    });
+    lines.push('');
+    lines.push('--- DABRAFENIB (Capsule) ---');
+    lines.push('Cycle,Reduction,Dose Description,Freq,Weekly Dose (mg),% Diff');
+    CYCLES.forEach(c=>{
+      const d=getDabCapsule(w,c.pct);
+      if(d) lines.push(`${c.label},${c.pct}%,"${d[3]}",${d[4]},${d[5]},${d[6]}%`);
+    });
+    lines.push('');
+    lines.push('--- TRAMETINIB (Liquid) ---');
+    lines.push('Cycle,Reduction,Dose (mg),Volume (mL),Freq');
+    CYCLES.forEach(c=>{
+      const d=getTramLiquid(w,c.pct);
+      if(d) lines.push(`${c.label},${c.pct}%,${d.doseMg},${d.doseMl},${d.freq}`);
+    });
+    lines.push('');
+    lines.push('--- TRAMETINIB (Capsule) ---');
+    lines.push('Cycle,Reduction,Dose Description,Weekly Dose (mg),% Diff');
+    CYCLES.forEach(c=>{
+      const d=getTramCapsule(w,c.pct);
+      if(d) lines.push(`${c.label},${c.pct}%,"${d.doseDesc}",${d.weeklyDoseMg},${d.pctDiff}%`);
+    });
+    lines.push('');
+    lines.push('DISCLAIMER: For research coordination use only. Always verify against the current approved protocol.');
+    const blob = new Blob([lines.join('\n')], {type:'text/csv'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href=url; a.download=`PNOC037_${results.patientId}_${w}kg.csv`; a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const isLiquidEligible = (w) => w < 26;
+  const isCapsuleEligible = (w) => w >= 26;
+
+  return (
+    <div>
+      <div className="header">
+        <div className="header-left">
+          <span className="trial-badge">PNOC037</span>
+          <div>
+            <h1>Pediatric Oncology Dosing Calculator</h1>
+            <div className="header-sub">Dabrafenib + Trametinib Weaning Schedule</div>
+          </div>
+        </div>
+        <div style={{display:'flex',alignItems:'center',gap:'8px',flexWrap:'wrap'}}>
+          <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:11,color:'var(--gray-400)',textAlign:'right'}}>
+            <div>WEANING: 100% → 75% → 50% → 25%</div>
+            <div>Cycles 1–4</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="main">
+        <div className="input-section">
+          <h2>Patient Input</h2>
+          <div className="input-grid">
+            <div className="field">
+              <label>Patient ID</label>
+              <input value={patientId} onChange={e=>setPatientId(e.target.value)} onKeyDown={handleKeyDown} placeholder="e.g. PT-001" />
+            </div>
+            <div className="field">
+              <label>Weight (kg) — rounded to nearest 0.1 kg</label>
+              <input type="number" step="0.1" min="8" max="200" value={weight} onChange={e=>setWeight(e.target.value)} onKeyDown={handleKeyDown} placeholder="e.g. 32.4" />
+            </div>
+            <button className="btn-calc" onClick={calculate}>Generate Schedule</button>
+          </div>
+          {error && <div style={{marginTop:12,color:'var(--red)',fontSize:13,fontFamily:"'IBM Plex Mono',monospace"}}>{error}</div>}
+        </div>
+
+        {!results && (
+          <div className="empty-state">
+            <div className="empty-icon">⚕</div>
+            <div className="empty-text">Enter patient ID and weight to generate the weaning schedule</div>
+            <div className="empty-sub">Both Dabrafenib and Trametinib formulations will be displayed</div>
+          </div>
+        )}
+
+        {results && (() => {
+          const w = roundWeight(results.weight);
+          const showLiq = w < 26;
+          const showCap = w >= 26;
+
+          return (
+            <>
+              <div className="results-header">
+                <div className="patient-chip">
+                  <div className="chip-item">
+                    <span className="chip-label">Patient ID</span>
+                    <span className="chip-value">{results.patientId}</span>
+                  </div>
+                  <div style={{width:1,height:32,background:'var(--navy-light)'}}></div>
+                  <div className="chip-item">
+                    <span className="chip-label">Weight</span>
+                    <span className="chip-value">{w} kg</span>
+                  </div>
+                  <div style={{width:1,height:32,background:'var(--navy-light)'}}></div>
+                  <div className="chip-item">
+                    <span className="chip-label">Formulation</span>
+                    <span className="chip-value" style={{fontSize:12}}>{showLiq && showCap ? 'Liquid + Capsule' : showLiq ? 'Liquid' : 'Capsule'}</span>
+                  </div>
+                </div>
+                <div className="actions">
+                  <button className="btn-sec" onClick={()=>window.print()}>🖨 Print / Save PDF</button>
+                  <button className="btn-sec" onClick={downloadCSV}>⬇ Download CSV</button>
+                </div>
+              </div>
+
+              {/* DABRAFENIB SECTION */}
+              <div className="drug-section">
+                <div className="drug-header">
+                  <div>
+                    <div className="drug-name">Dabrafenib</div>
+                    <div className="drug-meta">BID · 10 mg dispersible tablet (liquid) · 50 mg capsule</div>
+                  </div>
+                </div>
+
+                {showLiq && (
+                  <>
+                    <div className="info-note">Weight &lt;26 kg — Dispersible Tablet (liquid) formulation shown. Capsule available for ≥26 kg.</div>
+                    <div className="cycles-grid">
+                      {CYCLES.map(c=>{
+                        const d = getDabLiquid(w, c.pct);
+                        const targetPct = c.pct;
+                        const actualPct = d ? d[8] : null;
+                        const flagged = d && flagDeviation(actualPct, targetPct);
+                        return (
+                          <div className={`cycle-card cycle-card-${c.idx}`} key={c.idx}>
+                            <div className={`cycle-header cycle-header-${c.idx}`}>
+                              <span className={`cycle-label cycle-label-${c.idx}`}>{c.label}</span>
+                              <span className={`pct-badge pct-badge-${c.idx}`}>{c.pct}%</span>
+                            </div>
+                            <div className="cycle-body">
+                              {d ? (<>
+                                <div className="dose-row"><span className="dose-row-label">Dose (after waste)</span><span className="dose-row-value">{d[2]} mg</span></div>
+                                <div className="dose-row"><span className="dose-row-label">Tablets</span><span className="dose-row-value">{d[3]} tab{d[3]!==1?'s':''}</span></div>
+                                <div className="dose-row"><span className="dose-row-label">Frequency</span><span className="dose-row-value">{d[4]}</span></div>
+                                <div className="dose-row"><span className="dose-row-label">Vol Diluted In</span><span className="dose-row-value">{d[5]} mL</span></div>
+                                <div className="dose-row"><span className="dose-row-label">Vol Given to Pt</span><span className="dose-row-value">{d[6]} mL</span></div>
+                                <div className="dose-row"><span className="dose-row-label">Vol Wasted</span><span className="dose-row-value">{d[7]} mL</span></div>
+                                <div className="dose-row"><span className="dose-row-label">% of Initial Dose</span><span className={`dose-row-value ${flagged?'warning':'ok'}`}>{d[8]}%{flagged && <span className="flag-badge" style={{display:'block',marginTop:4}}>⚠ &gt;15% deviation</span>}</span></div>
+                              </>) : <span style={{color:'var(--gray-600)',fontSize:12}}>No data for this weight</span>}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
+
+                {showCap && (
+                  <>
+                    {showLiq && <div style={{marginTop:20}}></div>}
+                    <div className="info-note">Weight ≥26 kg — Capsule formulation shown. Dispersible tablet also available.</div>
+                    <div className="cycles-grid">
+                      {CYCLES.map(c=>{
+                        const d = getDabCapsule(w, c.pct);
+                        const flagged = d && flagDeviation(d[6], c.pct);
+                        return (
+                          <div className={`cycle-card cycle-card-${c.idx}`} key={c.idx}>
+                            <div className={`cycle-header cycle-header-${c.idx}`}>
+                              <span className={`cycle-label cycle-label-${c.idx}`}>{c.label}</span>
+                              <span className={`pct-badge pct-badge-${c.idx}`}>{c.pct}%</span>
+                            </div>
+                            <div className="cycle-body">
+                              {d ? (<>
+                                <div className="dose-row"><span className="dose-row-label">Dose Instructions</span><span className="dose-row-value" style={{fontSize:12,lineHeight:1.4}}>{d[3]}</span></div>
+                                <div className="dose-row"><span className="dose-row-label">Frequency</span><span className="dose-row-value">{d[4]}</span></div>
+                                <div className="dose-row"><span className="dose-row-label">Total Weekly Dose</span><span className="dose-row-value">{d[5]} mg</span></div>
+                                <div className="dose-row"><span className="dose-row-label">% of Initial Dose</span><span className={`dose-row-value ${flagged?'warning':'ok'}`}>{typeof d[6]==='number'?d[6].toFixed(1):d[6]}%{flagged && <span className="flag-badge" style={{display:'block',marginTop:4}}>⚠ &gt;15% deviation</span>}</span></div>
+                              </>) : <span style={{color:'var(--gray-600)',fontSize:12}}>No data for this weight</span>}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
+
+                {showLiq && !showCap && (
+                  <>
+                    <div style={{marginTop:16}} className="info-note" style={{background:'#ffffff06',borderColor:'var(--gray-600)',color:'var(--gray-400)'}}>
+                      Capsule formulation available for patients ≥26 kg.
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* TRAMETINIB SECTION */}
+              <div className="drug-section">
+                <div className="drug-header">
+                  <div>
+                    <div className="drug-name">Trametinib</div>
+                    <div className="drug-meta">Daily · 0.05 mg/mL liquid · 0.5 mg & 2 mg tablets/capsules</div>
+                  </div>
+                </div>
+
+                {/* Liquid */}
+                {showLiq && (
+                  <>
+                    <div className="info-note">Weight &lt;26 kg — Liquid formulation (0.05 mg/mL). Capsule available for ≥26 kg.</div>
+                    <div className="cycles-grid">
+                      {CYCLES.map(c=>{
+                        const d = getTramLiquid(w, c.pct);
+                        return (
+                          <div className={`cycle-card cycle-card-${c.idx}`} key={c.idx}>
+                            <div className={`cycle-header cycle-header-${c.idx}`}>
+                              <span className={`cycle-label cycle-label-${c.idx}`}>{c.label}</span>
+                              <span className={`pct-badge pct-badge-${c.idx}`}>{c.pct}%</span>
+                            </div>
+                            <div className="cycle-body">
+                              {d ? (<>
+                                <div className="dose-row"><span className="dose-row-label">Dose</span><span className="dose-row-value">{d.doseMg} mg</span></div>
+                                <div className="dose-row"><span className="dose-row-label">Volume</span><span className="dose-row-value">{d.doseMl} mL</span></div>
+                                <div className="dose-row"><span className="dose-row-label">Concentration</span><span className="dose-row-value">0.05 mg/mL</span></div>
+                                <div className="dose-row"><span className="dose-row-label">Frequency</span><span className="dose-row-value">{d.freq}</span></div>
+                              </>) : <span style={{color:'var(--gray-600)',fontSize:12}}>No data</span>}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
+
+                {/* Capsule */}
+                {showCap && (
+                  <>
+                    <div style={{marginTop: showLiq ? 20 : 0}}></div>
+                    <div className="info-note">Weight ≥26 kg — Capsule formulation shown below. Capsule+Liquid mixed dosing also available.</div>
+                    
+                    <div className="formulation-tabs">
+                      <button className={`form-tab ${tramFormTab==='capsule'?'active':''}`} onClick={()=>setTramFormTab('capsule')}>Capsule Only</button>
+                      <button className={`form-tab ${tramFormTab==='cap-liquid'?'active':''}`} onClick={()=>setTramFormTab('cap-liquid')}>Capsule + Liquid Mixed</button>
+                    </div>
+
+                    {tramFormTab === 'capsule' && (
+                      <div className="cycles-grid">
+                        {CYCLES.map(c=>{
+                          const d = getTramCapsule(w, c.pct);
+                          const flagged = d && flagDeviation(d.pctDiff, c.pct);
+                          return (
+                            <div className={`cycle-card cycle-card-${c.idx}`} key={c.idx}>
+                              <div className={`cycle-header cycle-header-${c.idx}`}>
+                                <span className={`cycle-label cycle-label-${c.idx}`}>{c.label}</span>
+                                <span className={`pct-badge pct-badge-${c.idx}`}>{c.pct}%</span>
+                              </div>
+                              <div className="cycle-body">
+                                {d ? (<>
+                                  <div className="dose-row"><span className="dose-row-label">Dose Instructions</span><span className="dose-row-value" style={{fontSize:12,lineHeight:1.4}}>{d.doseDesc}</span></div>
+                                  <div className="dose-row"><span className="dose-row-label">Frequency</span><span className="dose-row-value">Daily</span></div>
+                                  <div className="dose-row"><span className="dose-row-label">Total Weekly Dose</span><span className="dose-row-value">{d.weeklyDoseMg} mg</span></div>
+                                  <div className="dose-row"><span className="dose-row-label">% of Initial Dose</span><span className={`dose-row-value ${flagged?'warning':'ok'}`}>{d.pctDiff}%{flagged && <span className="flag-badge" style={{display:'block',marginTop:4}}>⚠ &gt;15% deviation — consider liquid</span>}</span></div>
+                                </>) : <span style={{color:'var(--gray-600)',fontSize:12}}>No data</span>}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {tramFormTab === 'cap-liquid' && (
+                      <div className="cycles-grid">
+                        {CYCLES.map(c=>{
+                          const d = getTramCapLiq(w, c.pct);
+                          return (
+                            <div className={`cycle-card cycle-card-${c.idx}`} key={c.idx}>
+                              <div className={`cycle-header cycle-header-${c.idx}`}>
+                                <span className={`cycle-label cycle-label-${c.idx}`}>{c.label}</span>
+                                <span className={`pct-badge pct-badge-${c.idx}`}>{c.pct}%</span>
+                              </div>
+                              <div className="cycle-body">
+                                {d ? (<>
+                                  <div className="dose-row"><span className="dose-row-label">Dose</span><span className="dose-row-value">{d.doseMg} mg</span></div>
+                                  <div className="dose-row"><span className="dose-row-label">Formulation</span><span className="dose-row-value">{d.formulation}</span></div>
+                                  {d.formulation === 'Liquid' && <div className="dose-row"><span className="dose-row-label">Volume</span><span className="dose-row-value">{d.volMl} mL</span></div>}
+                                  <div className="dose-row"><span className="dose-row-label">Frequency</span><span className="dose-row-value">Daily</span></div>
+                                </>) : <span style={{color:'var(--gray-600)',fontSize:12}}>No data</span>}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+
+              {/* QUICK REFERENCE SUMMARY */}
+              <div className="summary-section">
+                <h3>Quick Reference Summary</h3>
+                <div style={{overflowX:'auto'}}>
+                  <table className="summary-table">
+                    <thead>
+                      <tr>
+                        <th>Cycle</th>
+                        <th>Reduction</th>
+                        <th>Dabrafenib {w < 26 ? '(Dispersible Tab)' : '(Capsule)'}</th>
+                        <th>Trametinib {w < 26 ? '(Liquid)' : '(Capsule)'}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {CYCLES.map(c=>{
+                        let dabDesc = '—', tramDesc = '—';
+                        if(w < 26) {
+                          const dab = getDabLiquid(w, c.pct);
+                          if(dab) dabDesc = `${dab[2]} mg (${dab[3]} tab${dab[3]!==1?'s':''}), ${dab[4]}, give ${dab[6]} mL`;
+                          const tram = getTramLiquid(w, c.pct);
+                          if(tram) tramDesc = `${tram.doseMg} mg (${tram.doseMl} mL), Daily`;
+                        } else {
+                          const dab = getDabCapsule(w, c.pct);
+                          if(dab) dabDesc = `${dab[3]}, ${dab[4]}`;
+                          const tram = getTramCapsule(w, c.pct);
+                          if(tram) tramDesc = `${tram.doseDesc}, Daily`;
+                        }
+                        const cls = `td-cycle-${c.idx}`;
+                        return (
+                          <tr key={c.idx}>
+                            <td className={cls}>{c.label}</td>
+                            <td className={cls}>{c.pct}%</td>
+                            <td>{dabDesc}</td>
+                            <td>{tramDesc}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div className="disclaimer">
+                <span className="disclaimer-icon">⚠</span>
+                <span><strong>For research coordination use only.</strong> Always verify against the current approved protocol before administering any medication. This tool is intended to support — not replace — clinical judgment and protocol review.</span>
+              </div>
+            </>
+          );
+        })()}
+
+        {!results && (
+          <div className="disclaimer">
+            <span className="disclaimer-icon">⚠</span>
+            <span><strong>For research coordination use only.</strong> Always verify against the current approved protocol before administering any medication.</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
